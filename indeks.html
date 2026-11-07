@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CBT SAS - MTs Terpadu Al Ishlah</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { emerald: { 500: '#10b981', 600: '#059669', 700: '#047857' }, teal: { 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' }, gold: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' } },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], arab: ['Amiri', 'serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f0fdfa; -webkit-tap-highlight-color: transparent; }
+        .screen { display: none; min-height: 100vh; width: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+        .grid-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; cursor: pointer; border: 2px solid #e5e7eb; transition: all 0.2s; }
+        .grid-btn.answered { background-color: #10b981; color: white; border-color: #059669; }
+        .grid-btn.doubt { background-color: #fbbf24; color: white; border-color: #d97706; }
+        .grid-btn.active-q { border-color: #115e59; border-width: 3px; box-shadow: 0 0 0 2px rgba(17,94,89,0.2); }
+        .text-size-sm { font-size: 0.875rem; } .text-size-md { font-size: 1rem; } .text-size-lg { font-size: 1.125rem; }
+        @media print { body * { visibility: hidden; } #screen-result, #screen-result * { visibility: visible; } #screen-result { position: absolute; left: 0; top: 0; width: 100%; } .no-print { display: none !important; } }
+        /* Checkbox & Radio styling */
+        .option-label { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+        .option-label:hover { background-color: #f9fafb; }
+        .option-input:checked + .option-content { font-weight: 600; color: #0f766e; }
+        .option-label:has(.option-input:checked) { border-color: #0d9488; background-color: #f0fdfa; }
+        /* Match Select */
+        .match-select { width: 100%; padding: 8px; border-radius: 8px; border: 2px solid #e5e7eb; outline: none; }
+        .match-select:focus { border-color: #0d9488; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center shadow-lg rounded-full px-6 py-3 bg-red-600 text-white font-medium text-sm text-center"></div>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="screen-login" class="screen active bg-teal-800 p-4 sm:p-8 justify-center items-center relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==')]"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+            <div class="bg-teal-900 p-6 text-center border-b-4 border-gold-500">
+                <h1 class="text-xl font-bold text-white uppercase tracking-wider">Asesmen Sumatif Akhir Semester (SAS)</h1>
+                <p class="text-teal-200 text-sm mt-1">MTs Terpadu Al Ishlah Gorontalo</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-teal-50 border border-teal-100 p-3 rounded-xl text-center mb-2">
+                    <p class="text-xs font-bold text-teal-800">Mata Pelajaran: Bahasa Indonesia (Kelas VIII)</p>
+                    <p class="text-xs text-teal-600">Topik: Revisi & Klasifikasi Cerpen | Durasi: 90 Menit</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap</label>
+                    <input type="text" id="l-nama" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 outline-none" placeholder="Masukkan nama...">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Kelas</label>
+                    <select id="l-kelas" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 outline-none bg-white">
+                        <option value="">-- Pilih Kelas --</option>
+                        <option value="VIII Zubair">VIII Zubair</option>
+                        <option value="VIII Abdurrahman">VIII Abdurrahman</option>
+                        <option value="VIII Saad">VIII Saad</option>
+                        <option value="VIII Thalha">VIII Thalha</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Token Ujian</label>
+                    <input type="password" id="l-token" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 outline-none font-mono uppercase tracking-widest" placeholder="***">
+                </div>
+                <button onclick="prosesLogin()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3.5 rounded-xl shadow-md transition active:scale-95 mt-2">MASUK UJIAN</button>
+            </div>
+            <div class="bg-gray-50 p-4 text-center border-t flex justify-between">
+                <span class="text-xs text-gray-500">Guru: Nurhayun M. Arsyad</span>
+                <button onclick="document.getElementById('modal-guru').classList.remove('hidden')" class="text-xs text-teal-600 font-bold hover:underline">🔐 Panel Guru</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PAKTA INTEGRITAS -->
+    <div id="modal-pakta" class="fixed inset-0 bg-black/80 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 text-center max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-teal-800 mb-4 border-b pb-2">Doa & Pakta Integritas</h2>
+            <div class="bg-emerald-50 p-4 rounded-xl mb-4 border border-emerald-200 text-center">
+                <p class="font-arab text-2xl text-emerald-900 mb-2 leading-loose">رَبِّ زِدْنِي عِلْمًا وَارْزُقْنِي فَهْمًا</p>
+                <p class="text-sm italic text-emerald-800">"Ya Tuhanku, tambahkanlah kepadaku ilmu pengetahuan dan berikanlah kepadaku karunia untuk memahaminya."</p>
+            </div>
+            <div class="text-left text-sm text-gray-700 space-y-2 mb-6">
+                <p class="font-bold text-red-600">PERHATIAN! Aplikasi ini menggunakan sistem Anti-Cheat.</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Dilarang keluar dari aplikasi atau membuka tab/aplikasi lain.</li>
+                    <li>Sistem akan mencatat "Pelanggaran" secara otomatis jika Anda meminimize browser.</li>
+                    <li>Waktu ujian adalah 90 menit dan akan tersubmit otomatis jika habis.</li>
+                </ul>
+                <p class="font-bold mt-3 text-center border-t pt-3">Dengan ini saya menyatakan akan mengerjakan ujian secara jujur dan mandiri.</p>
+            </div>
+            <button onclick="mulaiUjian()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition active:scale-95 text-lg">MULAI UJIAN SEKARANG</button>
+        </div>
+    </div>
+
+    <!-- MODAL PANEL GURU -->
+    <div id="modal-guru" class="fixed inset-0 bg-black/80 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-teal-800">Panel Pengawas</h2>
+                <button onclick="document.getElementById('modal-guru').classList.add('hidden')" class="text-gray-500 font-bold hover:text-red-500">✕</button>
+            </div>
+            <div id="guru-login-area">
+                <input type="password" id="g-pin" placeholder="Masukkan PIN Guru" class="w-full p-3 border-2 border-gray-200 rounded-xl text-center mb-3 tracking-widest font-mono">
+                <button onclick="loginGuru()" class="w-full bg-teal-600 text-white font-bold py-2 rounded-xl">Buka Panel</button>
+            </div>
+            <div id="guru-dashboard" class="hidden space-y-3">
+                <p class="text-xs text-gray-500 mb-2">Sesi Siswa Lokal (Tersimpan di Browser ini):</p>
+                <div class="bg-gray-100 p-2 rounded-lg text-sm max-h-32 overflow-y-auto" id="guru-data-siswa">Tidak ada data.</div>
+                <button onclick="resetSesiLokal()" class="w-full bg-red-100 text-red-700 font-bold py-2 rounded-xl border border-red-300 hover:bg-red-200">🔄 Reset Sesi Ujian Lokal</button>
+                <div class="border-t pt-3 mt-3">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Webhook URL Google Sheets (Opsional)</label>
+                    <input type="text" id="g-webhook" class="w-full p-2 text-xs border rounded-lg" placeholder="https://script.google.com/macros/s/...">
+                    <button onclick="simpanWebhook()" class="w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 rounded-xl text-xs">Simpan Webhook</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. WORKSPACE UJIAN CBT -->
+    <div id="screen-cbt" class="screen bg-gray-50">
+        <!-- Topbar -->
+        <header class="bg-teal-800 text-white px-4 py-3 shadow-md sticky top-0 z-30 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleGrid()" class="bg-teal-700 p-2 rounded-lg hover:bg-teal-600 lg:hidden">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <div>
+                    <h2 class="font-bold text-sm leading-tight uppercase" id="cbt-nama">Siswa</h2>
+                    <p class="text-[10px] text-teal-200"><span id="cbt-kelas"></span></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="bg-red-500/20 px-2 py-1 rounded border border-red-400/50 text-center flex flex-col items-center justify-center">
+                    <span class="text-[9px] uppercase tracking-wider text-red-200">Pelanggaran</span>
+                    <span id="cbt-cheat" class="font-bold text-red-100 text-xs">0</span>
+                </div>
+                <div class="bg-teal-900 px-3 py-1.5 rounded-lg border border-teal-700 text-center">
+                    <div id="cbt-timer" class="font-mono font-bold text-lg text-gold-400 tracking-wider">90:00</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto flex flex-col relative">
+                <div class="p-4 sm:p-6 pb-24 max-w-4xl mx-auto w-full">
+                    
+                    <!-- Question Header Info -->
+                    <div class="flex justify-between items-end mb-4 border-b pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-teal-600 text-white font-bold px-3 py-1 rounded-lg text-sm shadow">Soal No. <span id="q-num">1</span></span>
+                            <span id="q-type-badge" class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded font-semibold border">Pilihan Ganda</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="changeFontSize(-1)" class="w-8 h-8 rounded bg-white border flex items-center justify-center text-sm font-bold hover:bg-gray-50">A-</button>
+                            <button onclick="changeFontSize(0)" class="w-8 h-8 rounded bg-white border flex items-center justify-center text-sm font-bold hover:bg-gray-50">A</button>
+                            <button onclick="changeFontSize(1)" class="w-8 h-8 rounded bg-white border flex items-center justify-center text-sm font-bold hover:bg-gray-50">A+</button>
+                        </div>
+                    </div>
+
+                    <!-- Question Container -->
+                    <div id="q-container" class="bg-white p-5 sm:p-8 rounded-2xl shadow-sm border border-gray-100 text-size-md text-gray-800 transition-all duration-300">
+                        <!-- Content Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Bottom Navigation Bar -->
+                <div class="fixed bottom-0 left-0 right-0 lg:left-0 bg-white border-t p-3 sm:p-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex justify-between items-center gap-2">
+                    <button id="btn-prev" onclick="navSoal(-1)" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 flex-1 sm:flex-none flex items-center justify-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> <span class="hidden sm:inline">Sebelumnya</span>
+                    </button>
+                    
+                    <label class="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl border-2 border-yellow-400 bg-yellow-50 cursor-pointer text-yellow-700 font-bold select-none active:scale-95 transition">
+                        <input type="checkbox" id="cb-ragu" onchange="toggleRagu()" class="w-5 h-5 accent-yellow-500">
+                        <span class="text-sm sm:text-base">Ragu-ragu</span>
+                    </label>
+
+                    <button id="btn-next" onclick="navSoal(1)" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-bold text-white bg-teal-600 hover:bg-teal-700 flex-1 sm:flex-none flex items-center justify-center gap-1">
+                        <span class="hidden sm:inline" id="txt-next">Selanjutnya</span> <span id="txt-next-mob" class="sm:hidden">Next</span> <svg id="icon-next" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </main>
+
+            <!-- Sidebar Grid (Desktop: Static, Mobile: Drawer) -->
+            <aside id="sidebar-grid" class="w-72 bg-white border-l shadow-xl lg:shadow-none fixed lg:relative right-0 top-0 bottom-0 z-40 transform translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col pt-14 lg:pt-0">
+                <button onclick="toggleGrid()" class="absolute top-4 left-4 lg:hidden w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">✕</button>
+                <div class="p-4 border-b bg-gray-50 flex-shrink-0 mt-4 lg:mt-0">
+                <div class="p-4 overflow-y-auto flex-1 pb-4">
+                    <div id="grid-container" class="grid grid-cols-5 gap-2">
+                        <!-- Grid Buttons Injected here -->
+                    </div>
+                </div>
+                <!-- Tombol Kirim Nilai & Selesai di Sidebar -->
+                <div class="p-4 border-t bg-white flex-shrink-0">
+                    <button onclick="checkSelesai()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-md transition active:scale-95 flex justify-center items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Kirim Nilai & Selesai
+                    </button>
+                </div>
+            </aside>
+            <!-- Overlay for mobile sidebar -->
+            <div id="sidebar-overlay" onclick="toggleGrid()" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI SELESAI -->
+    <div id="modal-finish" class="fixed inset-0 bg-black/80 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center">
+            <h2 class="text-xl font-bold text-teal-800 mb-2 border-b pb-2">Konfirmasi Selesai</h2>
+            <div class="text-left text-sm text-gray-700 space-y-2 mb-6 bg-gray-50 p-4 rounded-xl border">
+                <div class="flex justify-between"><span>Terjawab:</span> <strong id="f-ans" class="text-emerald-600">0</strong></div>
+                <div class="flex justify-between"><span>Ragu-ragu:</span> <strong id="f-doubt" class="text-yellow-600">0</strong></div>
+                <div class="flex justify-between"><span>Belum Dijawab:</span> <strong id="f-unans" class="text-red-600">0</strong></div>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Pastikan semua soal telah terjawab. Ujian yang diakhiri tidak dapat diulang.</p>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('modal-finish').classList.add('hidden')" class="flex-1 bg-gray-200 text-gray-800 font-bold py-2 rounded-xl">Batal</button>
+                <button onclick="akhiriUjian()" class="flex-1 bg-teal-600 text-white font-bold py-2 rounded-xl">Akhiri Ujian</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. HASIL & BUKTI UJIAN -->
+    <div id="screen-result" class="screen bg-gray-100 p-4 sm:p-8">
+        <div class="max-w-2xl mx-auto w-full bg-white shadow-xl rounded-2xl overflow-hidden border">
+            <div class="bg-teal-800 p-6 text-center text-white">
+                <h2 class="text-2xl font-bold uppercase">BUPTI PELAKSANAAN SAS</h2>
+                <p class="text-teal-200 text-sm">MTs Terpadu Al Ishlah Gorontalo</p>
+            </div>
+            <div class="p-6 sm:p-8">
+                <div class="grid grid-cols-2 gap-y-3 text-sm mb-6 border-b pb-6">
+                    <div class="text-gray-500">Nama Peserta</div><div class="font-bold text-gray-800 text-right" id="r-nama">-</div>
+                    <div class="text-gray-500">Kelas</div><div class="font-bold text-gray-800 text-right" id="r-kelas">-</div>
+                    <div class="text-gray-500">Mata Pelajaran</div><div class="font-bold text-gray-800 text-right">Bahasa Indonesia</div>
+                    <div class="text-gray-500">Waktu Selesai</div><div class="font-bold text-gray-800 text-right" id="r-time">-</div>
+                </div>
+
+                <div class="bg-teal-50 border border-teal-100 rounded-xl p-6 text-center mb-6">
+                    <p class="text-sm font-semibold text-teal-800 mb-1">SKOR AKHIR</p>
+                    <div class="text-6xl font-extrabold text-teal-600" id="r-score">0</div>
+                    <p class="text-sm font-bold mt-2" id="r-predikat">-</p>
+                </div>
+
+                <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded text-sm text-red-800 mb-6 flex justify-between items-center">
+                    <span>Catatan Pelanggaran Sistem (Anti-Cheat):</span>
+                    <strong class="text-lg" id="r-cheat">0 Kali</strong>
+                </div>
+
+                <p class="text-xs text-gray-500 text-center italic">Kartu ini adalah bukti sah bahwa peserta telah menyelesaikan ujian berbasis komputer.</p>
+            </div>
+        </div>
+
+        <div class="mt-6 flex flex-col sm:flex-row justify-center gap-4 max-w-2xl mx-auto w-full no-print pb-12">
+            <button onclick="window.print()" class="bg-white border-2 border-teal-600 text-teal-700 font-bold py-3 px-6 rounded-xl hover:bg-teal-50 flex-1 flex justify-center items-center gap-2">
+                📄 Cetak / Unduh PDF
+            </button>
+            <button id="btn-sync" onclick="syncKeServer()" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-xl shadow hover:bg-teal-700 flex-1 flex justify-center items-center gap-2">
+                ☁️ Kirim Nilai ke Guru
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        /* ==================================================
+           BANK SOAL (25 SOAL: 15 PG, 5 PGK, 3 B/S, 2 Jodohkan)
+           ================================================== */
+        const qData = [
+            // 1-15: Pilihan Ganda (PG)
+            { type: 'pg', id: 1,
+              stimulus: `<div class="bg-emerald-50 p-4 rounded-xl mb-4 border border-emerald-100"><p class="font-arab text-xl text-right mb-2 leading-relaxed">... وَقُوْلُوْا لِلنَّاسِ حُسْنًا ...</p><p class="text-sm italic text-gray-600">"...serta ucapkanlah kata-kata yang baik kepada manusia..." (Q.S. Al-Baqarah: 83)</p></div>Dalam merevisi cerpen karya teman, adab yang diajarkan ayat di atas diimplementasikan dengan cara...`,
+              options: ["Mengubah seluruh isi cerita tanpa izin.", "Memberikan umpan balik yang konstruktif dan santun.", "Menyoroti hanya kelemahan cerita di depan kelas.", "Mengganti nama tokoh agar bernuansa Islami."], ans: 1 
+            },
+            { type: 'pg', id: 2,
+              stimulus: `Sebuah cerpen menceritakan keseharian santri MTs Terpadu Al Ishlah. Pada paragraf pertama, tokoh sedang menyantap Binthe Biluhuta di kantin. Tiba-tiba di paragraf kedua, tokoh tersebut diceritakan sedang melawan naga di luar angkasa tanpa transisi cerita.`,
+              text: `Kelemahan utama cerpen tersebut berada pada unsur...`,
+              options: ["Pilihan Kata (Diksi)", "Penokohan", "Kepaduan Alur (Plot)", "Latar Waktu"], ans: 2 
+            },
+            { type: 'pg', id: 3,
+              text: `Jika kamu diminta mengklasifikasi cerpen berjudul "Misteri Hilangnya Songkok Gorontalo", cerpen tersebut paling tepat masuk ke dalam genre/tema...`,
+              options: ["Fabel", "Roman", "Misteri / Detektif", "Sejarah"], ans: 2 
+            },
+            { type: 'pg', id: 4,
+              text: `Perhatikan kalimat berikut: "Angin di Danau Limboto sangat dingin sekali."<br>Revisi kalimat yang paling efektif dan tepat secara tata bahasa adalah...`,
+              options: ["Angin di Danau Limboto sangat dingin.", "Angin Danau Limboto sangat dingin sekali menembus tulang.", "Sangat dingin sekali angin Danau Limboto itu.", "Danau Limboto anginnya dingin sekali banget."], ans: 0 
+            },
+            { type: 'pg', id: 5,
+              text: `Dalam tahap revisi, penyunting menemukan banyak kesalahan penulisan huruf kapital dan tanda baca. Hal ini tergolong ke dalam revisi aspek...`,
+              options: ["Substansi isi", "Struktur cerita", "Mekanik (Ejaan)", "Diksi (Pilihan kata)"], ans: 2 
+            },
+            { type: 'pg', id: 6,
+              text: `Kata 'melihat' terasa biasa dalam sastra. Jika tokoh diceritakan menatap tajam dengan penuh kemarahan, diksi yang lebih kuat untuk menggantikan 'melihat' adalah...`,
+              options: ["Menengok", "Melirik", "Mendelik", "Menonton"], ans: 2 
+            },
+            { type: 'pg', id: 7,
+              stimulus: `(1) Hasan bergegas menuju masjid. (2) Azan Magrib menggema di langit Gorontalo. (3) Ia langsung membuka gawainya untuk bermain gim. (4) Setelah salat, ia kembali ke asrama.`,
+              text: `Kalimat bernomor berapakah yang mengganggu logika cerita (alur) karakter Hasan?`,
+              options: ["(1)", "(2)", "(3)", "(4)"], ans: 2 
+            },
+            { type: 'pg', id: 8, text: "Umpan balik (feedback) yang konstruktif sebaiknya dimulai dengan...", options: ["Kritik tajam", "Saran rombakan total", "Apresiasi terhadap kelebihan karya", "Menyalahkan ide penulis"], ans: 2 },
+            { type: 'pg', id: 9, text: "Cerpen yang mengangkat nilai-nilai ajaran Islam, seperti kejujuran, sabar, dan berbakti kepada orang tua, diklasifikasikan sebagai cerpen...", options: ["Horor", "Religi", "Fantasi", "Mitos"], ans: 1 },
+            { type: 'pg', id: 10, text: "Tahap penyelesaian konflik dalam alur cerpen disebut...", options: ["Orientasi", "Komplikasi", "Resolusi", "Klimaks"], ans: 2 },
+            { type: 'pg', id: 11, text: "Revisi cerpen sebaiknya dilakukan...", options: ["Sambil menulis draf pertama", "Setelah draf pertama selesai (diendapkan sejenak)", "Sebelum menentukan tema", "Hanya jika diminta penerbit"], ans: 1 },
+            { type: 'pg', id: 12, text: "Kalimat dialog: 'Ah, masak sih kamu yang makan ayam Iloni ku?' kata Andi. Tanda baca yang tepat untuk mengakhiri petikan langsung tersebut adalah...", options: ["Titik (.)", "Koma (,)", "Tanya (?)", "Seru (!)"], ans: 2 },
+            { type: 'pg', id: 13, text: "Mana di bawah ini contoh kalimat yang menggunakan majas personifikasi untuk memperindah cerpen?", options: ["Wajahnya cantik seperti bulan purnama.", "Angin malam menyapu lembut wajahku di pesisir Teluk Tomini.", "Ia belajar keras memeras keringat.", "Suaranya menggelegar membelah angkasa."], ans: 1 },
+            { type: 'pg', id: 14, text: "Fungsi utama mengklasifikasikan cerpen berdasarkan tema bagi pembaca adalah...", options: ["Memudahkan pembaca memilih cerita sesuai minat.", "Membuat cerpen lebih panjang.", "Mengubah cerpen menjadi novel.", "Menyembunyikan pesan moral penulis."], ans: 0 },
+            { type: 'pg', id: 15, text: "Ketika temanmu salah menuliskan istilah keagamaan, tindakan yang tepat saat merevisi adalah...", options: ["Membiarkannya agar ia malu.", "Menghapus bagian tersebut.", "Membetulkannya dan memberikan catatan penjelas.", "Melaporkan ke guru agar nilainya dikurangi."], ans: 2 },
+            
+            // 16-20: Pilihan Ganda Kompleks (PGK) - Multiple correct answers
+            { type: 'pgk', id: 16,
+              text: `Pilih dua tindakan yang <b>benar</b> saat memberikan umpan balik (revisi) pada cerpen teman! (Pilih 2 jawaban)`,
+              options: [
+                  "Menggunakan bahasa yang merendahkan karena kita lebih pintar.",
+                  "Fokus pada perbaikan alur yang tidak logis.",
+                  "Menunjukkan letak kesalahan ejaan dan memberikan solusi perbaikannya.",
+                  "Mengubah nama penulis menjadi nama kita."
+              ], ans: [1, 2] 
+            },
+            { type: 'pgk', id: 17,
+              stimulus: `Membaca draf: "Andi pergi ke pasar. Andi membeli ikan. Andi pulang ke rumah."`,
+              text: `Kalimat di atas terasa kaku. Teknik revisi yang tepat untuk memperbaikinya adalah... (Pilih 2 jawaban)`,
+              options: [
+                  "Menggunakan kata ganti (pronomina) 'ia' atau 'dia' untuk menghindari repetisi nama.",
+                  "Menghapus kalimat kedua dan ketiga.",
+                  "Menggabungkannya dengan konjungsi (kata hubung) agar lebih mengalir.",
+                  "Mengubahnya menjadi puisi."
+              ], ans: [0, 2] 
+            },
+            { type: 'pgk', id: 18, text: "Ciri-ciri cerpen yang masuk dalam klasifikasi 'Cerita Fantasi' adalah... (Pilih 2)", options: ["Terdapat kejadian ajaib/supranatural", "Latar tempat dan kejadian sangat realistis seperti berita", "Tokohnya mungkin memiliki kekuatan gaib", "Isinya membahas sejarah proklamasi kemerdekaan"], ans: [0, 2] },
+            { type: 'pgk', id: 19, text: "Aspek 'Mekanik' yang harus diperhatikan dalam merevisi cerpen meliputi... (Pilih 2)", options: ["Konflik batin tokoh", "Penggunaan huruf kapital", "Ketepatan tanda baca", "Tema cerita"], ans: [1, 2] },
+            { type: 'pgk', id: 20, text: "Manfaat membaca cerpen bertema religi antara lain... (Pilih 2)", options: ["Mendapatkan hikmah dan pesan moral keislaman", "Mengetahui cara merakit bom", "Mempertebal keimanan lewat kisah inspiratif", "Belajar rumus matematika"], ans: [0, 2] },
+            
+            // 21-23: Benar/Salah (B/S)
+            { type: 'bs', id: 21,
+              text: `Tentukan Benar atau Salah pernyataan mengenai revisi cerpen berikut!`,
+              statements: [
+                  "Revisi hanya bertujuan untuk mencari kesalahan ketik saja.",
+                  "Mengklasifikasikan cerpen dapat dilakukan berdasarkan tema, misalnya fabel, religi, atau misteri.",
+                  "Umpan balik konstruktif berarti memberikan kritik yang diiringi dengan saran perbaikan."
+              ], ans: [false, true, true] 
+            },
+            { type: 'bs', id: 22,
+              text: `Tentukan Benar atau Salah terkait unsur instrinsik cerpen!`,
+              statements: [
+                  "Latar suasana tidak penting dalam membangun emosi pembaca cerpen.",
+                  "Komplikasi adalah bagian di mana masalah memuncak atau mencapai klimaks.",
+                  "Diksi (pilihan kata) yang kaku seperti teks berita sangat dianjurkan dalam menulis dialog cerpen persahabatan."
+              ], ans: [false, true, false] 
+            },
+            { type: 'bs', id: 23,
+              text: `Evaluasi penggunaan bahasa berikut (Benar/Salah):`,
+              statements: [
+                  "Kata 'merana' merupakan diksi sastra dari kata 'sedih'.",
+                  "Kalimat 'Suaranya lembut seperti petir' adalah majas perbandingan yang tepat.",
+                  "Transisi paragraf diperlukan agar cerita mengalir lancar dari satu kejadian ke kejadian lain."
+              ], ans: [true, false, true] 
+            },
+
+            // 24-25: Menjodohkan
+            { type: 'match', id: 24,
+              text: `Jodohkanlah istilah dalam struktur/unsur cerpen (Kiri) dengan maknanya (Kanan)!`,
+              premises: ["Orientasi", "Resolusi", "Diksi"],
+              responses: ["Pilihan kata untuk efek estetis", "Pengenalan tokoh dan latar", "Penyelesaian masalah/konflik", "Gagasan utama cerita"],
+              ans: {0: 1, 1: 2, 2: 0} // Premis Index : Response Index
+            },
+            { type: 'match', id: 25,
+              text: `Jodohkan jenis kesalahan penulisan (Kiri) dengan tindakan revisinya (Kanan)!`,
+              premises: ["Typo / Salah ketik", "Plot Hole (Cerita loncat tidak logis)", "Monoton (repetisi kata berulang)"],
+              responses: ["Tambahkan paragraf transisi/penjelas", "Gunakan sinonim atau kata ganti", "Perbaiki ejaan sesuai PUEBI", "Ganti tokoh utama"],
+              ans: {0: 2, 1: 0, 2: 1}
+            }
+        ];
+
+        /* ==================================================
+           STATE & CONSTANTS
+           ================================================== */
+        const TOKEN_VALID = "ISLAH26";
+        const PIN_GURU = "1234";
+        const TOTAL_Q = qData.length;
+        const DEFAULT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyZVYg3h4aQqAuRTRuOhPEXjIQ0F7Y8IE_wJQjKysiy1ggs9Oxnniojbps7h0uIgY2O/exec";
+        
+        let state = {
+            user: { nama: '', kelas: '' },
+            answers: {}, // { qId: answerData }
+            ragu: {}, // { qId: boolean }
+            currentQ: 0,
+            timeLimit: 90 * 60, // 90 mins in seconds
+            cheatCount: 0,
+            isFinished: false,
+            qOrder: [], // Array of indices 0..24 (for shuffling later if needed, here we just use linear for simplicity, but we can shuffle options)
+            startTime: null
+        };
+        
+        let timerInterval;
+        let fontScale = 0; // -1, 0, 1
+        
+        /* ==================================================
+           INITIALIZATION & UTILS
+           ================================================== */
+        window.onload = () => {
+            // Load state from local storage if exists
+            const saved = localStorage.getItem('cbt_session');
+            if(saved) {
+                const parsed = JSON.parse(saved);
+                if(!parsed.isFinished) {
+                    state = parsed;
+                    restoreSession();
+                }
+            }
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('blur', handleBlur);
+        };
+
+        function showToastMsg(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-5');
+            setTimeout(() => t.classList.add('opacity-0', 'pointer-events-none', '-translate-y-5'), 3000);
+        }
+
+        function saveState() {
+            if(!state.isFinished) {
+                localStorage.setItem('cbt_session', JSON.stringify(state));
+            }
+        }
+
+        /* ==================================================
+           LOGIN & SECURITY
+           ================================================== */
+        function prosesLogin() {
+            const n = document.getElementById('l-nama').value.trim();
+            const k = document.getElementById('l-kelas').value;
+            const t = document.getElementById('l-token').value.trim().toUpperCase();
+
+            if(!n || !k) return showToastMsg('Lengkapi identitas!');
+            if(t !== TOKEN_VALID) return showToastMsg('Token Ujian Tidak Valid!');
+
+            state.user = { nama: n, kelas: k };
+            
+            // init order
+            state.qOrder = Array.from({length: TOTAL_Q}, (_, i) => i);
+            
+            document.getElementById('screen-login').classList.remove('active');
+            document.getElementById('modal-pakta').classList.remove('hidden');
+            
+            // Request Fullscreen
+            try { document.documentElement.requestFullscreen(); } catch(e){}
+        }
+
+        function mulaiUjian() {
+            document.getElementById('modal-pakta').classList.add('hidden');
+            document.getElementById('screen-cbt').classList.add('active');
+            
+            document.getElementById('cbt-nama').innerText = state.user.nama;
+            document.getElementById('cbt-kelas').innerText = state.user.kelas;
+            
+            if(!state.startTime) state.startTime = new Date().toLocaleString('id-ID');
+            
+            initGrid();
+            renderSoal();
+            startTimer();
+            saveState();
+        }
+
+        function restoreSession() {
+            document.getElementById('screen-login').classList.remove('active');
+            document.getElementById('screen-cbt').classList.add('active');
+            document.getElementById('cbt-nama').innerText = state.user.nama;
+            document.getElementById('cbt-kelas').innerText = state.user.kelas;
+            document.getElementById('cbt-cheat').innerText = state.cheatCount;
+            initGrid();
+            renderSoal();
+            startTimer();
+            showToastMsg('Sesi ujian dilanjutkan!');
+        }
+
+        /* Anti-Cheat */
+        function handleVisibilityChange() {
+            if(document.hidden && document.getElementById('screen-cbt').classList.contains('active') && !state.isFinished) {
+                recordCheat();
+            }
+        }
+        function handleBlur() {
+            if(document.getElementById('screen-cbt').classList.contains('active') && !state.isFinished) {
+                // Short delay to avoid false positives on modals
+                setTimeout(() => { if(!document.hasFocus()) recordCheat(); }, 500);
+            }
+        }
+        function recordCheat() {
+            state.cheatCount++;
+            document.getElementById('cbt-cheat').innerText = state.cheatCount;
+            saveState();
+            alert(`PERINGATAN PELANGGARAN #${state.cheatCount}!\nAnda terdeteksi keluar dari aplikasi ujian. Pelanggaran ini dicatat dalam sistem.`);
+        }
+
+        /* ==================================================
+           WORKSPACE UJIAN (RENDER & NAVIGASI)
+           ================================================== */
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                state.timeLimit--;
+                saveState(); // auto save timer
+                let m = Math.floor(state.timeLimit / 60);
+                let s = state.timeLimit % 60;
+                document.getElementById('cbt-timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                
+                if(state.timeLimit <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Waktu Habis! Ujian disubmit otomatis.");
+                    akhiriUjian();
+                }
+            }, 1000);
+        }
+
+        function initGrid() {
+            const grid = document.getElementById('grid-container');
+            grid.innerHTML = '';
+            for(let i=0; i<TOTAL_Q; i++) {
+                const btn = document.createElement('div');
+                btn.className = `grid-btn`;
+                btn.id = `grid-btn-${i}`;
+                btn.innerText = i + 1;
+                btn.onclick = () => jumpSoal(i);
+                grid.appendChild(btn);
+            }
+            updateGridUI();
+        }
+
+        function updateGridUI() {
+            for(let i=0; i<TOTAL_Q; i++) {
+                const qId = qData[state.qOrder[i]].id;
+                const btn = document.getElementById(`grid-btn-${i}`);
+                btn.className = `grid-btn`; // reset
+                if(i === state.currentQ) btn.classList.add('active-q');
+                if(state.ragu[qId]) btn.classList.add('doubt');
+                else if(hasAnswered(qId)) btn.classList.add('answered');
+            }
+        }
+
+        function hasAnswered(qId) {
+            const ans = state.answers[qId];
+            if(ans === undefined || ans === null) return false;
+            if(Array.isArray(ans)) return ans.length > 0 && ans.some(a => a !== null); // for PGK / BS
+            if(typeof ans === 'object') return Object.keys(ans).length > 0; // for Match
+            return ans !== ''; // for PG
+        }
+
+        function changeFontSize(dir) {
+            if(dir === 0) fontScale = 0;
+            else fontScale = Math.max(-1, Math.min(2, fontScale + dir));
+            
+            const cont = document.getElementById('q-container');
+            cont.classList.remove('text-size-sm', 'text-size-md', 'text-size-lg');
+            if(fontScale === -1) cont.classList.add('text-size-sm');
+            else if(fontScale >= 1) cont.classList.add('text-size-lg');
+            else cont.classList.add('text-size-md');
+        }
+
+        function renderSoal() {
+            const idx = state.currentQ;
+            const data = qData[state.qOrder[idx]];
+            const qId = data.id;
+            
+            document.getElementById('q-num').innerText = idx + 1;
+            
+            let badgeText = "";
+            let html = "";
+            
+            // Render Stimulus
+            if(data.stimulus) html += `<div class="mb-4 text-gray-700 leading-relaxed">${data.stimulus}</div>`;
+            if(data.text) html += `<div class="font-bold mb-5">${data.text}</div>`;
+            
+            const currentAns = state.answers[qId];
+
+            if(data.type === 'pg') {
+                badgeText = "Pilihan Ganda";
+                html += `<div class="space-y-3">`;
+                const labels = ['A', 'B', 'C', 'D'];
+                data.options.forEach((opt, i) => {
+                    const isChecked = currentAns === i ? 'checked' : '';
+                    html += `
+                        <label class="option-label">
+                            <input type="radio" name="ans_pg" value="${i}" onchange="saveAnswer(${qId}, ${i})" class="option-input mt-1 w-4 h-4 accent-teal-600" ${isChecked}>
+                            <div class="option-content flex gap-3">
+                                <span class="font-bold text-gray-500">${labels[i]}.</span>
+                                <span>${opt}</span>
+                            </div>
+                        </label>`;
+                });
+                html += `</div>`;
+            } 
+            else if(data.type === 'pgk') {
+                badgeText = "PG Kompleks (Pilih > 1)";
+                html += `<div class="text-xs text-teal-600 mb-3 font-semibold">*Pilih lebih dari satu jawaban yang benar</div><div class="space-y-3">`;
+                const currentArr = Array.isArray(currentAns) ? currentAns : [];
+                data.options.forEach((opt, i) => {
+                    const isChecked = currentArr.includes(i) ? 'checked' : '';
+                    html += `
+                        <label class="option-label">
+                            <input type="checkbox" value="${i}" onchange="saveAnswerPGK(${qId}, ${i}, this.checked)" class="option-input mt-1 w-4 h-4 rounded accent-teal-600" ${isChecked}>
+                            <div class="option-content flex gap-3">
+                                <span class="font-bold text-gray-500">◻</span>
+                                <span>${opt}</span>
+                            </div>
+                        </label>`;
+                });
+                html += `</div>`;
+            }
+            else if(data.type === 'bs') {
+                badgeText = "Benar / Salah";
+                const currentArr = Array.isArray(currentAns) ? currentAns : [];
+                html += `<table class="w-full text-sm border-collapse border rounded-xl overflow-hidden shadow-sm">
+                            <tr class="bg-gray-100 text-left"><th class="p-3 border-b border-r w-2/3">Pernyataan</th><th class="p-3 border-b text-center w-1/6">Benar</th><th class="p-3 border-b text-center w-1/6">Salah</th></tr>`;
+                data.statements.forEach((stmt, i) => {
+                    const val = currentArr[i];
+                    html += `<tr class="hover:bg-gray-50 border-b">
+                                <td class="p-3 border-r">${stmt}</td>
+                                <td class="p-3 text-center"><input type="radio" name="bs_${i}" onchange="saveAnswerBS(${qId}, ${i}, true)" class="w-5 h-5 accent-teal-600" ${val===true?'checked':''}></td>
+                                <td class="p-3 text-center"><input type="radio" name="bs_${i}" onchange="saveAnswerBS(${qId}, ${i}, false)" class="w-5 h-5 accent-red-600" ${val===false?'checked':''}></td>
+                             </tr>`;
+                });
+                html += `</table>`;
+            }
+            else if(data.type === 'match') {
+                badgeText = "Menjodohkan";
+                const currentObj = (typeof currentAns === 'object' && currentAns !== null) ? currentAns : {};
+                html += `<div class="space-y-4">`;
+                data.premises.forEach((prem, i) => {
+                    html += `<div class="bg-gray-50 p-3 rounded-xl border flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                <div class="flex-1 font-medium text-sm text-gray-800">${i+1}. ${prem}</div>
+                                <div class="w-full sm:w-1/2 shrink-0">
+                                    <select class="match-select text-sm" onchange="saveAnswerMatch(${qId}, ${i}, this.value)">
+                                        <option value="">-- Pilih Pasangan --</option>`;
+                    data.responses.forEach((resp, j) => {
+                        const sel = currentObj[i] == j ? 'selected' : '';
+                        html += `<option value="${j}" ${sel}>${String.fromCharCode(65+j)}. ${resp}</option>`;
+                    });
+                    html += `       </select>
+                                </div>
+                             </div>`;
+                });
+                html += `</div>`;
+            }
+
+            document.getElementById('q-type-badge').innerText = badgeText;
+            document.getElementById('q-container').innerHTML = html;
+            
+            // Setup Nav Buttons
+            document.getElementById('btn-prev').style.visibility = idx > 0 ? 'visible' : 'hidden';
+            
+            const btnNext = document.getElementById('btn-next');
+            const txtNext = document.getElementById('txt-next');
+            const txtNextMob = document.getElementById('txt-next-mob');
+            const iconNext = document.getElementById('icon-next');
+            
+            if(idx === TOTAL_Q - 1) {
+                txtNext.innerText = "Selesai"; txtNextMob.innerText = "Selesai";
+                iconNext.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>`;
+                btnNext.classList.replace('bg-teal-600', 'bg-red-600');
+                btnNext.classList.replace('hover:bg-teal-700', 'hover:bg-red-700');
+            } else {
+                txtNext.innerText = "Selanjutnya"; txtNextMob.innerText = "Next";
+                iconNext.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>`;
+                btnNext.classList.replace('bg-red-600', 'bg-teal-600');
+                btnNext.classList.replace('hover:bg-red-700', 'hover:bg-teal-700');
+            }
+
+            // Set Checkbox Ragu
+            document.getElementById('cb-ragu').checked = !!state.ragu[qId];
+            updateGridUI();
+        }
+
+        /* Save Answer Logic */
+        function saveAnswer(qId, val) {
+            state.answers[qId] = val;
+            if(state.ragu[qId]) delete state.ragu[qId]; // auto remove ragu if answered
+            saveState(); updateGridUI();
+        }
+        function saveAnswerPGK(qId, val, isChecked) {
+            if(!Array.isArray(state.answers[qId])) state.answers[qId] = [];
+            if(isChecked) {
+                if(!state.answers[qId].includes(val)) state.answers[qId].push(val);
+            } else {
+                state.answers[qId] = state.answers[qId].filter(x => x !== val);
+            }
+            if(state.ragu[qId]) delete state.ragu[qId];
+            saveState(); updateGridUI();
+        }
+        function saveAnswerBS(qId, stmtIdx, val) {
+            if(!Array.isArray(state.answers[qId])) state.answers[qId] = [];
+            state.answers[qId][stmtIdx] = val;
+            if(state.ragu[qId]) delete state.ragu[qId];
+            saveState(); updateGridUI();
+        }
+        function saveAnswerMatch(qId, premIdx, val) {
+            if(typeof state.answers[qId] !== 'object' || state.answers[qId] === null) state.answers[qId] = {};
+            if(val === "") delete state.answers[qId][premIdx];
+            else state.answers[qId][premIdx] = parseInt(val);
+            if(state.ragu[qId]) delete state.ragu[qId];
+            saveState(); updateGridUI();
+        }
+
+        function toggleRagu() {
+            const qId = qData[state.qOrder[state.currentQ]].id;
+            state.ragu[qId] = document.getElementById('cb-ragu').checked;
+            saveState(); updateGridUI();
+        }
+
+        function navSoal(dir) {
+            if(dir === 1 && state.currentQ === TOTAL_Q - 1) {
+                checkSelesai();
+            } else {
+                state.currentQ += dir;
+                renderSoal();
+            }
+        }
+        function jumpSoal(idx) {
+            state.currentQ = idx;
+            renderSoal();
+            if(window.innerWidth < 1024) toggleGrid(); // auto close sidebar on mobile
+        }
+
+        function toggleGrid() {
+            const grid = document.getElementById('sidebar-grid');
+            const overlay = document.getElementById('sidebar-overlay');
+            grid.classList.toggle('translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        /* ==================================================
+           SELESAI & KALKULASI SKOR
+           ================================================== */
+        function checkSelesai() {
+            let ansCount = 0, doubtCount = 0, unansCount = 0;
+            for(let i=0; i<TOTAL_Q; i++) {
+                const qId = qData[state.qOrder[i]].id;
+                if(state.ragu[qId]) doubtCount++;
+                else if(hasAnswered(qId)) ansCount++;
+                else unansCount++;
+            }
+            document.getElementById('f-ans').innerText = ansCount;
+            document.getElementById('f-doubt').innerText = doubtCount;
+            document.getElementById('f-unans').innerText = unansCount;
+            document.getElementById('modal-finish').classList.remove('hidden');
+        }
+
+        function akhiriUjian() {
+            clearInterval(timerInterval);
+            document.getElementById('modal-finish').classList.add('hidden');
+            document.getElementById('screen-cbt').classList.remove('active');
+            
+            // Kalkulasi Skor
+            let totalScore = 0;
+            const maxScorePerQ = 100 / TOTAL_Q; // 4 poin per soal (karena 25 soal)
+            
+            let jumlahBenar = 0;
+            let jumlahSalah = 0;
+            let rincian = [];
+
+            // Pemetaan Tujuan Pembelajaran berdasarkan ID soal
+            const getTP = (id) => {
+                if([1,8,15,16,20].includes(id)) return "TP1: Sikap & Adab Islami";
+                if([3,9,14,18,21].includes(id)) return "TP2: Klasifikasi Cerpen";
+                if([6,13,23,24].includes(id)) return "TP3: Revisi Diksi & Majas";
+                if([2,7,10,17,22].includes(id)) return "TP4: Revisi Alur & Struktur";
+                return "TP5: Revisi Mekanik & Ejaan";
+            };
+            
+            qData.forEach((q, idx) => {
+                const ans = state.answers[q.id];
+                let isCorrect = false;
+                let studentAnsStr = "-";
+                
+                if(!hasAnswered(q.id)) {
+                    // Belum dijawab
+                }
+                else if(q.type === 'pg') {
+                    studentAnsStr = String.fromCharCode(65 + ans);
+                    if(ans === q.ans) { totalScore += maxScorePerQ; isCorrect = true; }
+                } 
+                else if(q.type === 'pgk') {
+                    studentAnsStr = ans.map(a => String.fromCharCode(65 + a)).join(', ');
+                    // Cek kelengkapan
+                    let correctCount = 0;
+                    ans.forEach(a => { if(q.ans.includes(a)) correctCount++; else correctCount--; }); // penalty for wrong checkbox
+                    if(correctCount === q.ans.length) { totalScore += maxScorePerQ; isCorrect = true; }
+                    else if(correctCount > 0) { totalScore += (maxScorePerQ / 2); isCorrect = true; } // parsial dianggap benar sebagian
+                }
+                else if(q.type === 'bs') {
+                    studentAnsStr = ans.map(a => a ? 'B' : 'S').join(', ');
+                    let correctCount = 0;
+                    q.ans.forEach((k, i) => { if(ans[i] === k) correctCount++; });
+                    totalScore += (maxScorePerQ * (correctCount / q.ans.length));
+                    if(correctCount === q.ans.length) isCorrect = true;
+                    else if(correctCount > 0) isCorrect = true; // parsial
+                }
+                else if(q.type === 'match') {
+                    studentAnsStr = "Menjodohkan (Tersimpan)";
+                    let correctCount = 0;
+                    let totalPairs = Object.keys(q.ans).length;
+                    for(let prem in q.ans) {
+                        if(ans[prem] === q.ans[prem]) correctCount++;
+                    }
+                    totalScore += (maxScorePerQ * (correctCount / totalPairs));
+                    if(correctCount === totalPairs) isCorrect = true;
+                    else if(correctCount > 0) isCorrect = true; // parsial
+                }
+
+                if(hasAnswered(q.id)) {
+                    if(isCorrect) jumlahBenar++; else jumlahSalah++;
+                } else {
+                    jumlahSalah++;
+                }
+
+                rincian.push({
+                    no: idx + 1,
+                    status: isCorrect ? 'Benar' : 'Salah',
+                    jawabanSiswa: studentAnsStr,
+                    tp: getTP(q.id)
+                });
+            });
+
+            totalScore = Math.round(totalScore);
+            state.finalScore = totalScore;
+            state.jumlahBenar = jumlahBenar;
+            state.jumlahSalah = jumlahSalah;
+            state.rincian = rincian;
+            state.waktuSelesai = new Date().toLocaleString('id-ID');
+            state.isFinished = true;
+            saveState(); // Update storage
+
+            // Tampilkan Hasil
+            document.getElementById('screen-result').classList.add('active');
+            document.getElementById('r-nama').innerText = state.user.nama;
+            document.getElementById('r-kelas').innerText = state.user.kelas;
+            
+            const now = new Date();
+            document.getElementById('r-time').innerText = now.toLocaleTimeString('id-ID');
+            document.getElementById('r-score').innerText = totalScore;
+            
+            let pred = "";
+            if(totalScore >= 90) pred = "Sangat Baik (Lulus)";
+            else if(totalScore >= 75) pred = "Baik (Lulus)";
+            else pred = "Kurang (Remedial)";
+            document.getElementById('r-predikat').innerText = pred;
+            document.getElementById('r-cheat').innerText = `${state.cheatCount} Kali`;
+
+            try { document.exitFullscreen(); } catch(e){}
+        }
+
+        /* ==================================================
+           PANEL GURU & WEBHOOK SYNC
+           ================================================== */
+        function loginGuru() {
+            if(document.getElementById('g-pin').value === PIN_GURU) {
+                document.getElementById('guru-login-area').classList.add('hidden');
+                document.getElementById('guru-dashboard').classList.remove('hidden');
+                
+                // Show local data
+                const saved = localStorage.getItem('cbt_session');
+                if(saved) {
+                    const d = JSON.parse(saved);
+                    document.getElementById('guru-data-siswa').innerHTML = `
+                        <strong>Nama:</strong> ${d.user.nama} (${d.user.kelas})<br>
+                        <strong>Status:</strong> ${d.isFinished ? `Selesai (Skor: ${d.finalScore})` : 'Sedang Mengerjakan'}<br>
+                        <strong>Pelanggaran:</strong> ${d.cheatCount}
+                    `;
+                }
+                const url = localStorage.getItem('cbt_webhook') || DEFAULT_WEBHOOK_URL;
+                if(url) document.getElementById('g-webhook').value = url;
+            } else {
+                alert("PIN Salah!");
+            }
+        }
+
+        function resetSesiLokal() {
+            if(confirm("Yakin mereset sesi browser ini? Data ujian siswa akan HAPUS TOTAL.")) {
+                localStorage.removeItem('cbt_session');
+                alert("Sesi direset. Halaman akan dimuat ulang.");
+                location.reload();
+            }
+        }
+
+        function simpanWebhook() {
+            const url = document.getElementById('g-webhook').value.trim();
+            localStorage.setItem('cbt_webhook', url);
+            alert("Webhook berhasil disimpan di browser pengawas.");
+        }
+
+        function syncKeServer() {
+            const url = localStorage.getItem('cbt_webhook') || DEFAULT_WEBHOOK_URL;
+            if(!url) return alert("URL Webhook belum diatur. Guru dapat mengaturnya di Panel Pengawas.");
+            
+            const btn = document.getElementById('btn-sync');
+            btn.innerHTML = "🔄 Mengirim...";
+            btn.disabled = true;
+
+            const payload = {
+                nama: state.user.nama, 
+                kelas: state.user.kelas,
+                waktuMulai: state.startTime,
+                waktuSelesai: state.waktuSelesai,
+                skor: state.finalScore, 
+                pelanggaran: state.cheatCount,
+                jumlahBenar: state.jumlahBenar,
+                jumlahSalah: state.jumlahSalah,
+                rincian: state.rincian
+            };
+
+            // Implementasi fetch no-cors untuk Google Script Webhook
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                alert("Data berhasil dikirim ke server/Spreadsheet Guru!");
+                btn.innerHTML = "✅ Berhasil Dikirim";
+            }).catch(e => {
+                alert("Gagal mengirim data. Pastikan koneksi internet stabil.");
+                btn.innerHTML = "☁️ Coba Lagi";
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
